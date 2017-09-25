@@ -1,0 +1,45 @@
+{
+  "name": "end-space",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=8.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "description": "Line ending and space correction tools",
+  "repository": "https://github.com/jlyonsmith/end-space.git",
+  "files": [
+    "dist/**"
+  ],
+  "bin": {
+    "ender": "dist/ender.js",
+    "spacer": "dist/spacer.js"
+  },
+  "scripts": {
+    "build": "babel src -d dist -s --ignore *.test.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "end",
+    "space",
+    "code"
+  ],
+  "author": "John Lyon-Smith",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^2.11.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "istanbul": "^0.4.5",
+    "jest": "^21.1.0",
+    "jest-babel-istanbul": "^0.1.0",
+    "nodemon": "^1.12.1"
+  }
+}
