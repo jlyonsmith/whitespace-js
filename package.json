@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "babel src -d dist -s --ignore *.test.js",
+    "debug:ender": "npm run build && node --inspect-brk dist/ender.js src/spacer.js",
     "test": "jest"
   },
   "keywords": [
@@ -29,7 +30,8 @@
   "author": "John Lyon-Smith",
   "license": "MIT",
   "dependencies": {
-    "commander": "^2.11.0"
+    "concat-stream": "^1.6.0",
+    "minimist": "^1.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -40,6 +42,7 @@
     "istanbul": "^0.4.5",
     "jest": "^21.1.0",
     "jest-babel-istanbul": "^0.1.0",
-    "nodemon": "^1.12.1"
+    "nodemon": "^1.12.1",
+    "tmp": "0.0.33"
   }
 }

@@ -1,7 +1,6 @@
 {
   "presets": [
-    [ "env", { "targets": { "node": 8 } } ],
-    "react"
+    [ "env", { "targets": { "node": 8 } } ]
   ],
   "plugins": [
     "transform-class-properties",
