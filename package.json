@@ -1,5 +1,5 @@
 {
-  "name": "end-space",
+  "name": "whitespace-tools",
   "version": "1.0.0",
   "engines": {
     "node": ">=8.0"
@@ -8,18 +8,19 @@
     "darwin",
     "linux"
   ],
-  "description": "Line ending and space correction tools",
-  "repository": "https://github.com/jlyonsmith/end-space.git",
+  "description": "Line ending and beginning-of-line whitespace space correction tools",
+  "repository": "https://github.com/jlyonsmith/whitespace-tools.git",
   "files": [
     "dist/**"
   ],
   "bin": {
-    "ender": "dist/ender.js",
-    "spacer": "dist/spacer.js"
+    "ender": "dist/ender-cli.js",
+    "spacer": "dist/spacer-cli.js"
   },
   "scripts": {
     "build": "babel src -d dist -s --ignore *.test.js",
-    "debug:ender": "npm run build && node --inspect-brk dist/ender.js src/spacer.js",
+    "debug:ender": "babel-node --inspect-brk src/ender-cli.js",
+    "debug:spacer": "babel-node --inspect-brk src/spacer-cli.js",
     "test": "jest"
   },
   "keywords": [

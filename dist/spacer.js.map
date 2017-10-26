@@ -1,1 +1,0 @@
-{"version":3,"sources":["../src/spacer.js"],"names":["Spacer","constructor","options"],"mappings":";;;;;AAAO,MAAMA,MAAN,CAAa;AAClBC,cAAYC,OAAZ,EAAqB,CAEpB;AAHiB;QAAPF,M,GAAAA,M","file":"spacer.js","sourcesContent":["export class Spacer {\n  constructor(options) {\n    \n  }\n}\n"]}

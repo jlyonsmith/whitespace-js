@@ -1,11 +1,11 @@
-import { Ender } from './ender'
+import { Spacer } from './Spacer'
 
 test('test help', (done) => {
-  const ender = new Ender({
+  const tool = new Spacer({
     info: jest.fn(),
     log: jest.fn()
   })
-  return ender.run(['--help']).then(exitCode => {
+  return tool.run(['--help']).then(exitCode => {
     expect(exitCode).toBe(0)
     done()
   })

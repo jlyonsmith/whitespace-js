@@ -1,4 +1,4 @@
-import { Ender } from './ender'
+import { Ender } from './Ender'
 import tmp from 'tmp'
 import fs from 'fs'
 import util from 'util'
@@ -34,9 +34,9 @@ function getOutput(fn) {
 
 test('test help', done => {
   const mockLog = getMockLog()
-  const ender = new Ender(mockLog)
+  const tool = new Ender(mockLog)
 
-  return ender.run(['--help']).then(exitCode => {
+  return tool.run(['--help']).then(exitCode => {
     expect(exitCode).toBe(0)
     expect(getOutput(mockLog.info)).toEqual(expect.stringContaining('--help'))
     done()
@@ -45,12 +45,12 @@ test('test help', done => {
 
 test('cr to cr', (done) => {
   const mockLog = getMockLog()
-  const ender = new Ender(mockLog)
+  const tool = new Ender(mockLog)
   const crTxt = tmpDirObj.name + '/cr.txt'
   const crTxt2 = tmpDirObj.name + '/cr2.txt'
 
   return util.promisify(fs.writeFile)(crTxt, '\r').then(() => {
-    return ender.run(`-n cr -o ${crTxt2} ${crTxt}`.split(' '))
+    return tool.run(`-n cr -o ${crTxt2} ${crTxt}`.split(' '))
   }).then(exitCode => {
     expect(exitCode).toBe(0)
     expect(getOutput(mockLog.error)).toEqual(expect.stringMatching(/cr2.txt/))

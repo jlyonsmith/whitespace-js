@@ -1,19 +1,19 @@
 import parseArgs from 'minimist'
 import fs from 'fs'
 import concat from 'concat-stream'
+import autoBind from 'auto-bind2'
+import { fullVersion } from './version'
 
 export class Ender {
   constructor(log) {
-    this.readLineEndingInfo = this.readLineEndingInfo.bind(this)
-    this.writeNewFile = this.writeNewFile.bind(this)
-    this.run = this.run.bind(this)
+    autoBind(this)
     this.log = log
   }
 
-  async readLineEndingInfo() {
+  async readEolInfo() {
     return new Promise((resolve, reject) => {
-      const readable = (!this.inputFilename ? process.stdin :
-        fs.createReadStream(this.inputFilename, { encoding: 'utf8' }))
+      const readable = (!this.args['input-file'] ? process.stdin :
+        fs.createReadStream(this.args['input-file'], { encoding: 'utf8' }))
 
       // Read the entire file && determine all the different line endings
       this.numCR = 0
@@ -56,16 +56,16 @@ export class Ender {
   async writeNewFile() {
     return new Promise((resolve, reject) => {
       let newNumLines = 1
-      
-      if ((this.newLineEnding === 'cr' && this.numCR + 1 === this.numLines) ||
-          (this.newLineEnding === 'lf' && this.numLF + 1 === this.numLines) ||
-          (this.newLineEnding === 'crlf' && this.numCRLF + 1 === this.numLines)) {
+
+      if ((this.args['new-eol'] === 'cr' && this.numCR + 1 === this.numLines) ||
+          (this.args['new-eol'] === 'lf' && this.numLF + 1 === this.numLines) ||
+          (this.args['new-eol'] === 'crlf' && this.numCRLF + 1 === this.numLines)) {
         // We're not changing the line endings; nothing to do
         return resolve()
       }
 
-      const newlineChars = (this.newLineEnding === 'cr' ? '\r' : this.newLineEnding === 'lf' ? '\n' : '\r\n')
-      const writeable = fs.createWriteStream(this.outputFilename, { flags: 'w', encoding: 'utf8' })
+      const newlineChars = (this.args['new-eol'] === 'cr' ? '\r' : this.args['new-eol'] === 'lf' ? '\n' : '\r\n')
+      const writeable = fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
 
       writeable.on('finish', () => {
         resolve()
@@ -101,77 +101,69 @@ export class Ender {
 
   async run(argv) {
     const options = {
-      string: [ 'new-line-ending', 'output-file' ],
+      string: [ 'new-eol', 'output-file' ],
       boolean: [ 'help', 'version' ],
       alias: {
         'o': 'output-file',
-        'n': 'new-line-ending'
+        'n': 'new-eol'
       },
       default: {
-        'new-line-ending': 'auto'
+        'new-eol': 'auto',
       }
     }
     let args = parseArgs(argv, options)
+
+    if (args.version) {
+      this.log.info(fullVersion)
+      return 0
+    }
 
     if (args.help) {
       this.log.info(`
 Line ending fixer. Defaults to reading from stdin.
 
--o, --output-file <file>        The output file. Can be the same as the input file.
--n, --new-line-ending <ending>  The new line ending, either auto, cr, lf, crlf.  auto will use the most
-                                commonly occurring ending.
---help                          Displays help
---version                       Displays version
+-o, --output-file <file>  The output file. Can be the same as the input file. Defaults to stdout.
+-n, --new-eol <ending>    The new EOL, either 'auto', 'cr', 'lf', 'crlf'.  'auto' will use the most
+                          commonly occurring ending in the input file.
+--help                    Displays help
+--version                 Displays version
 `)
       return 0
     }
 
-    this.inputFilename = (args['_'].length > 0 ? args['_'][0] : null)
-    this.outputFilename = args['output-file']
-    this.newLineEnding = args['new-line-ending']
+    args['input-file'] = (args['_'].length > 0 ? args['_'][0] : null)
+    this.args = args
 
-    if (this.inputFilename && !fs.existsSync(this.inputFilename)) {
-      this.log.error(`File '${this.inputFilename}' does not exist`)
+    if (args['input-file'] && !fs.existsSync(args['input-file'])) {
+      this.log.error(`File '${args['input-file']}' does not exist`)
       return -1
     }
 
     let msg = ''
 
-    await this.readLineEndingInfo()
+    await this.readEolInfo()
 
-    msg += `"${this.inputFilename}", ${this.numEndings > 1 ? 'mixed' : this.numCR > 0 ? 'cr' : this.numLF > 0 ? 'lf' : 'crlf'}, ${this.numLines} lines`
+    msg += `'${args['input-file'] || '<stdin>'}', ${this.numEndings > 1 ? 'mixed' : this.numCR > 0 ? 'cr' : this.numLF > 0 ? 'lf' : 'crlf'}, ${this.numLines} lines`
 
-    if (!this.outputFilename) {
-      this.log.error(msg)
-      return 0
-    }
-
-    if (this.newLineEnding === 'auto') {
+    if (args['new-eol'] === 'auto') {
       // Find the most common line ending && make that the automatic line ending
-      this.newLineEnding = 'lf'
+      this.args['new-eol'] = 'lf'
       let n = this.numLF
 
       if (this.numCRLF > n) {
-        this.newLineEnding = 'crlf'
+        args['new-eol'] = 'crlf'
         n = this.numCRLF
       }
 
       if (this.numCR > n) {
-        this.newLineEnding = 'cr'
+        args['new-eol'] = 'cr'
       }
     }
 
     await this.writeNewFile()
 
-    msg += ` -> "${this.outputFilename}", ${this.newLineEnding}, ${this.newNumLines} lines`
+    msg += ` -> '${args['output-file'] || '<stdout>'}', ${this.args['new-eol']}, ${this.newNumLines} lines`
     this.log.error(msg)
     return 0
   }
 }
-
-const ender = new Ender(console)
-ender.run(process.argv.slice(2)).then((exitCode) => {
-  process.exit(exitCode)
-}).catch((err) => {
-  console.error(err)
-})
