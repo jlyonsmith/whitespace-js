@@ -31,6 +31,7 @@
   "author": "John Lyon-Smith",
   "license": "MIT",
   "dependencies": {
+    "auto-bind2": "^1.0.3",
     "concat-stream": "^1.6.0",
     "minimist": "^1.2.0"
   },

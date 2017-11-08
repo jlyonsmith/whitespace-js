@@ -2,6 +2,7 @@ import parseArgs from 'minimist'
 import fs from 'fs'
 import concat from 'concat-stream'
 import { fullVersion } from './version'
+import autoBind from 'auto-bind2'
 
 export class Spacer {
   constructor(log) {
@@ -9,86 +10,178 @@ export class Spacer {
     autoBind(this)
   }
 
-  countBolSpacesAndTabs(lines) {
-    let info = {
-      spaces: 0,
-      tabs: 0
-    }
+  readBolInfo() {
+    return new Promise((resolve, reject) => {
+      const readable = (!this.args['input-file'] ? process.stdin :
+        fs.createReadStream(this.args['input-file'], { encoding: 'utf8' }))
 
-    for (let line in lines) {
-      for (let 1 = 0; i < line.length; i++) {
-        const c = line[i]
-
-        if (c === ' ') {
-          info.spaces += 1
-        } else if (c === '\t') {
-          info.tabs += 1
-        } else {
-          break
-        }
+      // Read the entire file && determine all the different line endings
+      let info = {
+        spaces: 0,
+        tabs: 0,
       }
-    }
 
-    return info
+      readable.on('error', (err) => {
+        reject(err)
+      })
+
+      let writeable = concat((fileContents) => {
+        info.fileContents = fileContents
+        let i = 0
+        let atBol = true
+
+        while (i < fileContents.length) {
+          const c = fileContents[i]
+
+          if (atBol) {
+            if (c === ' ') {
+              info.spaces += 1
+            } else if (c === '\t') {
+              info.tabs += 1
+            } else {
+              atBol = false
+            }
+          } else if (c === '\n') {
+            atBol = true
+          }
+
+          i += 1
+        }
+
+        resolve(info)
+      })
+      readable.pipe(writeable)
+    })
   }
 
-  untabify(line) {
-      let newLine = ''
+  async writeNewFile(info) {
+    function untabify(s, ts) {
+      let t = ''
 
-      for (let j = 0; j < line.length; j++) {
-        const c = line[j]
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i]
 
         if (c === '\t') {
-          const numSpaces = tabSize - (new_line.length % tabsize)
-          newLine += ' ' * numSpaces
+          const n = ts - (t.length % ts)
+
+          t += ' '.repeat(n)
         } else {
-          newLine += c
+          t += c
         }
       }
 
-      lines[i] = newLine
+      return t
     }
-  }
 
-  tabify(line) {
-    let bol = true
-    let numBolSpaces = 0
-    let newLine = ''
+    function tabify(s, ts, r) {
+      let ns = 0
+      let t = ''
 
-    for (let j = 0; j < line.length; j++) {
-      const c = line[j]
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i]
 
-      if (bol && c == ' ') {
-        numBolSpaces += 1
-      } else if (bol && c != ' ') {
-        bol = false
-        newLine += '\t' * (numBolSpaces / tabSize)
+        if (c === ' ') {
+          ns += 1
+        }
+
+        if (ns % ts === 0) {
+          t += '\t'
+          ns = 0
+        }
       }
 
-      if (!roundDownSpaces) {
-        newLine += ' ' * (numBolSpaces % tabSize)
+      if (ns > 0) {
+        if (!r) {
+          t += ' '.repeat(ns)
+        } else {
+          ns = 0
+        }
       }
 
-      newLine += c
-    } else {
-      newLine += c
+      return [t, ns]
     }
+
+    return new Promise((resolve, reject) => {
+      info.newSpaces = 0
+      info.newTabs = 0
+
+      if ((this.args['new-bol'] === 'tabs' && info.spaces === 0) ||
+          (this.args['new-bol'] === 'spaces' && info.tabs === 0)) {
+        // We're not changing the line beginnings; nothing to do
+        return resolve()
+      }
+
+      const writeable = !this.args['output-file'] ? process.stdout :
+        fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
+
+      writeable.on('finish', () => {
+        resolve()
+      })
+      writeable.on('error', (err) => {
+        reject()
+      })
+
+      const toTabs = (this.args['new-bol'] === 'tabs')
+      let atBol = true
+      let ts = this.args['tab-size']
+      let r = this.args['round']
+      let i = 0
+      let s = ''
+
+      while (i < info.fileContents.length) {
+        const c = info.fileContents[i]
+
+        if (c === '\n') {
+          s = ''
+          atBol = true
+          writeable.write(c)
+        } else if (atBol) {
+          if (c === ' ' || c === '\t') {
+            s += c
+          } else {
+            atBol = false
+
+            s = untabify(s, ts)
+
+            if (toTabs) {
+              const [t, ns] = tabify(s, ts, r)
+
+              s = t
+              info.newTabs += t.length - ns
+              info.newSpaces += ns
+            } else {
+              info.newSpaces += s.length
+            }
+
+            writeable.write(s)
+            writeable.write(c)
+            atBol = false
+          }
+        } else {
+          writeable.write(c)
+        }
+
+        i += 1
+      }
+
+      writeable.end()
+    })
   }
 
   async run(argv) {
     const options = {
-      string: [ 'new-line-ending', 'output-file', 'tabsize', 'round' ],
-      boolean: [ 'help', 'version' ],
+      string: [ 'new-bol', 'output-file', 'tab-size' ],
+      boolean: [ 'help', 'version', 'round' ],
       alias: {
         'o': 'output-file',
-        'n': 'new-line-ending',
-        't': 'tabsize',
-        'r': 'round'
+        'n': 'new-bol',
+        't': 'tab-size',
+        'r': 'round',
       },
       default: {
-        'new-line-ending': 'auto',
-        'round': true,
-        'tabsize': 2
+        'new-bol': 'auto',
+        'round': false,
+        'tab-size': '2',
       }
     }
     let args = parseArgs(argv, options)
@@ -100,16 +193,19 @@ export class Spacer {
 
     if (args.help) {
       this.log.info(`
-Beginning of line space fixer. Defaults to reading from stdin.
+Beginning of line normalizer.
 
--o, --output-file <file>        The output file. Can be the same as the input file.
--n, --new-line-spacing <space>  The new line spacing, either 'tabs' or 'spaces'. If not given then current
-                                file state, either 'tabs', 'spaces' or 'mixed'.
--t, --tabsize                   The tab size to assume in the existing file, in spaces. Defaults to 2.
--r, --round                     When tabifying, rounds extra spaces down to a whole number of tabs.
-                                Defaults to true.
---help                          Displays help
---version                       Displays version
+spacer [<options>] <file>
+
+<file>                      The input file. Defaults to reading from STDIN.
+-o, --output-file <file>    The output file. Can be the same as the input file. Defaults to STDOUT.
+-n, --new-bol <space>       The new BOL line spacing, either 'tabs' or 'spaces' or 'auto'.
+                            Default is 'auto'.
+-t, --tab-size               The tab size to assume in the existing file, in spaces. Defaults to 2.
+-r, --round                 When tabifying, rounds extra spaces down to a whole number of tabs.
+                            Defaults to false.
+--help                      Displays help
+--version                   Displays version
 `)
       return 0
     }
@@ -121,30 +217,32 @@ Beginning of line space fixer. Defaults to reading from stdin.
       return -1
     }
 
-    args['tab-size'] = args['tab-size'].parseInt()
+    const bolList = ['tabs', 'spaces', 'auto']
+    if (!bolList.includes(args['new-bol'])) {
+      this.log.error(`New BOL must be one of ${bolList.join(', ')}`)
+      return -1
+    }
+
+    args['tab-size'] = parseInt(args['tab-size'])
     this.args = args
 
-    const before = await this.readBolInfo()
-    const whitespaceType = (info) => ( info.tabs > 0 ? (info.spaces > 0 ? 'mixed' : 'tabs') : 'spaces' ``)
-    let msg = `'${input_file}', ${file_type.to_s}, ${whitespaceType(before)}`
+    const info = await this.readBolInfo()
+    const bolType = (s, t) => (t > 0 ? (s > 0 ? 'mixed' : 'tabs') : 'spaces')
 
-    if (args['new-bol']) {
-      this.untabify(lines)
-
-      if (args.newLineEnding.startsWith('t')) {
-        this.tabify(lines)
+    if (args['new-bol'] === 'auto') {
+      if (info.spaces > info.tabs) {
+        args['new-bol'] = 'spaces'
+      } else {
+        args['new-bol'] = 'tabs'
       }
     }
 
-    if (args.newLineEnding) {
-      after = this.countBolSpacesAndTabs(lines)
+    await this.writeNewFile(info)
 
-      this.writeFile(lines)
+    this.log.info(
+      `'${args['input-file'] || '<stdin>'}', ${bolType(info.spaces, info.tabs)}` +
+      ` -> '${args['output-file'] || '<stdout>'}', ${bolType(info.newSpaces, info.newTabs)}`)
 
-      msg += ` -> '${output_file}', ${whitespaceType(after)}`
-    }
-
-    this.log.info(msg)
     return 0
   }
 }
