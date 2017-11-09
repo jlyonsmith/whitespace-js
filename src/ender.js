@@ -3,6 +3,7 @@ import fs from 'fs'
 import concat from 'concat-stream'
 import autoBind from 'auto-bind2'
 import { fullVersion } from './version'
+import stream from 'stream'
 
 export class Ender {
   constructor(log) {
@@ -26,7 +27,7 @@ export class Ender {
       readable.on('error', (err) => {
         reject(err)
       })
-      let writeable = concat((fileContents) => {
+      let writable = concat((fileContents) => {
         info.fileContents = fileContents
         let i = 0
         while (i < fileContents.length) {
@@ -51,20 +52,27 @@ export class Ender {
         info.numEndings = (info.numCR > 0 ? 1 : 0) + (info.numLF > 0 ? 1 : 0) + (info.numCRLF > 0 ? 1 : 0)
         resolve(info)
       })
-      readable.pipe(writeable)
+      readable.pipe(writable)
     })
   }
 
   async writeNewFile(info) {
     return new Promise((resolve, reject) => {
       const newlineChars = (this.args['new-eol'] === 'cr' ? '\r' : this.args['new-eol'] === 'lf' ? '\n' : '\r\n')
-      const writeable = !this.args['output-file'] ? process.stdout :
-        fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
 
-      writeable.on('finish', () => {
+      let writable = null
+
+      if (!this.args['output-file']) {
+        writable = new stream.PassThrough()
+        writable.pipe(process.stdout)
+      } else {
+        writable = fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
+      }
+
+      writable.on('finish', () => {
         resolve()
       })
-      writeable.on('error', (err) => {
+      writable.on('error', (err) => {
         reject()
       })
 
@@ -79,18 +87,18 @@ export class Ender {
           }
 
           newNumLines += 1
-          writeable.write(newlineChars)
+          writable.write(newlineChars)
         } else if (c === '\n') {
           newNumLines += 1
-          writeable.write(newlineChars)
+          writable.write(newlineChars)
         } else {
-          writeable.write(c)
+          writable.write(c)
         }
 
         i += 1
       }
       info.newNumLines = newNumLines
-      writeable.end()
+      writable.end()
     })
   }
 
@@ -141,32 +149,34 @@ ender [<options>] <file>
     }
 
     let info = await this.readEolInfo()
-
-    if (args['new-eol'] === 'auto') {
-      // Find the most common line ending && make that the automatic line ending
-      this.args['new-eol'] = 'lf'
-      let n = info.numLF
-
-      if (info.numCRLF > n) {
-        args['new-eol'] = 'crlf'
-        n = info.numCRLF
-      }
-
-      if (info.numCR > n) {
-        args['new-eol'] = 'cr'
-      }
-    }
-
     let msg = `'${args['input-file'] || '<stdin>'}', ` +
-    `${info.numEndings > 1 ? 'mixed' : info.numCR > 0 ? 'cr' : info.numLF > 0 ? 'lf' : 'crlf'}, ` +
-    `${info.numLines} lines`
+      `${info.numEndings > 1 ? 'mixed' : info.numCR > 0 ? 'cr' : info.numLF > 0 ? 'lf' : 'crlf'}, ` +
+      `${info.numLines} lines`
 
-    if (
-      args['new-eol'] &&
-      !(args['new-eol'] === 'cr' && info.numCR + 1 === info.numLines) &&
-      !(args['new-eol'] === 'lf' && info.numLF + 1 === info.numLines) &&
-      !(args['new-eol'] === 'crlf' && info.numCRLF + 1 === info.numLines)) {
-      await this.writeNewFile(info)
+    if (args['new-eol']) {
+      if (args['new-eol'] === 'auto') {
+        // Find the most common line ending && make that the automatic line ending
+        this.args['new-eol'] = 'lf'
+        let n = info.numLF
+
+        if (info.numCRLF > n) {
+          args['new-eol'] = 'crlf'
+          n = info.numCRLF
+        }
+
+        if (info.numCR > n) {
+          args['new-eol'] = 'cr'
+        }
+      }
+
+      if (!(args['new-eol'] === 'cr' && info.numCR + 1 === info.numLines) &&
+        !(args['new-eol'] === 'lf' && info.numLF + 1 === info.numLines) &&
+        !(args['new-eol'] === 'crlf' && info.numCRLF + 1 === info.numLines)) {
+          await this.writeNewFile(info)
+      } else {
+        info.newNumLines = info.numLines
+      }
+
       msg += ` -> '${args['output-file'] || '<stdout>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`
     }
 

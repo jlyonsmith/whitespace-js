@@ -3,6 +3,7 @@ import fs from 'fs'
 import concat from 'concat-stream'
 import { fullVersion } from './version'
 import autoBind from 'auto-bind2'
+import stream from 'stream'
 
 export class Spacer {
   constructor(log) {
@@ -25,7 +26,7 @@ export class Spacer {
         reject(err)
       })
 
-      let writeable = concat((fileContents) => {
+      let writable = concat((fileContents) => {
         info.fileContents = fileContents
         let i = 0
         let atBol = true
@@ -50,7 +51,7 @@ export class Spacer {
 
         resolve(info)
       })
-      readable.pipe(writeable)
+      readable.pipe(writable)
     })
   }
 
@@ -105,19 +106,19 @@ export class Spacer {
       info.newSpaces = 0
       info.newTabs = 0
 
-      if ((this.args['new-bol'] === 'tabs' && info.spaces === 0) ||
-          (this.args['new-bol'] === 'spaces' && info.tabs === 0)) {
-        // We're not changing the line beginnings; nothing to do
-        return resolve()
+      let writable = null
+
+      if (!this.args['output-file']) {
+        writable = new stream.PassThrough()
+        writable.pipe(process.stdout)
+      } else {
+        writable = fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
       }
 
-      const writeable = !this.args['output-file'] ? process.stdout :
-        fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
-
-      writeable.on('finish', () => {
+      writable.on('finish', () => {
         resolve()
       })
-      writeable.on('error', (err) => {
+      writable.on('error', (err) => {
         reject()
       })
 
@@ -134,7 +135,7 @@ export class Spacer {
         if (c === '\n') {
           s = ''
           atBol = true
-          writeable.write(c)
+          writable.write(c)
         } else if (atBol) {
           if (c === ' ' || c === '\t') {
             s += c
@@ -153,18 +154,18 @@ export class Spacer {
               info.newSpaces += s.length
             }
 
-            writeable.write(s)
-            writeable.write(c)
+            writable.write(s)
+            writable.write(c)
             atBol = false
           }
         } else {
-          writeable.write(c)
+          writable.write(c)
         }
 
         i += 1
       }
 
-      writeable.end()
+      writable.end()
     })
   }
 
@@ -179,7 +180,6 @@ export class Spacer {
         'r': 'round',
       },
       default: {
-        'new-bol': 'auto',
         'round': false,
         'tab-size': '2',
       }
@@ -200,7 +200,7 @@ spacer [<options>] <file>
 <file>                      The input file. Defaults to reading from STDIN.
 -o, --output-file <file>    The output file. Can be the same as the input file. Defaults to STDOUT.
 -n, --new-bol <space>       The new BOL line spacing, either 'tabs' or 'spaces' or 'auto'.
-                            Default is 'auto'.
+                            Default is to just report.
 -t, --tab-size               The tab size to assume in the existing file, in spaces. Defaults to 2.
 -r, --round                 When tabifying, rounds extra spaces down to a whole number of tabs.
                             Defaults to false.
@@ -218,7 +218,7 @@ spacer [<options>] <file>
     }
 
     const bolList = ['tabs', 'spaces', 'auto']
-    if (!bolList.includes(args['new-bol'])) {
+    if (args['new-bol'] && !bolList.includes(args['new-bol'])) {
       this.log.error(`New BOL must be one of ${bolList.join(', ')}`)
       return -1
     }
@@ -228,20 +228,30 @@ spacer [<options>] <file>
 
     const info = await this.readBolInfo()
     const bolType = (s, t) => (t > 0 ? (s > 0 ? 'mixed' : 'tabs') : 'spaces')
+    let msg = `'${args['input-file'] || '<stdin>'}', ${bolType(info.spaces, info.tabs)}`
 
-    if (args['new-bol'] === 'auto') {
-      if (info.spaces > info.tabs) {
-        args['new-bol'] = 'spaces'
-      } else {
-        args['new-bol'] = 'tabs'
+    if (args['new-bol']) {
+      if (args['new-bol'] === 'auto') {
+        if (info.spaces > info.tabs) {
+          args['new-bol'] = 'spaces'
+        } else {
+          args['new-bol'] = 'tabs'
+        }
       }
+
+      if (!(this.args['new-bol'] === 'tabs' && info.spaces === 0) &&
+          !(this.args['new-bol'] === 'spaces' && info.tabs === 0)) {
+        // We're not changing the line beginnings; nothing to do
+        await this.writeNewFile(info)
+      } else {
+        info.newSpaces = info.spaces
+        info.newTabs = info.tabs
+      }
+
+      msg += ` -> '${args['output-file'] || '<stdout>'}', ${bolType(info.newSpaces, info.newTabs)}`
     }
 
-    await this.writeNewFile(info)
-
-    this.log.info(
-      `'${args['input-file'] || '<stdin>'}', ${bolType(info.spaces, info.tabs)}` +
-      ` -> '${args['output-file'] || '<stdout>'}', ${bolType(info.newSpaces, info.newTabs)}`)
+    this.log.info(msg)
 
     return 0
   }

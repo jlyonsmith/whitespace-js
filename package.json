@@ -21,8 +21,14 @@
     "build": "babel src -d dist -s --ignore *.test.js",
     "debug:ender": "babel-node --inspect-brk src/ender-cli.js",
     "debug:spacer": "babel-node --inspect-brk src/spacer-cli.js",
-    "tests": "jest --testPathPattern src/*.test.js",
-    "tests:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --testPathPattern src/*.test.js"
+    "tests": "jest",
+    "tests:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "node_modules/",
+      "scratch/"
+    ]
   },
   "keywords": [
     "end",
