@@ -1,19 +1,10 @@
 import { Ender } from './Ender'
-import tmp from 'tmp'
+import tempy from 'tempy'
 import fs from 'fs'
 import util from 'util'
 
-let tmpDirObj = null
-
-beforeAll(() => {
-  tmpDirObj = tmp.dirSync()
-})
-
-afterAll(() => {
-  if (tmpDirObj) {
-    tmpDirObj.removeCallback()
-  }
-})
+const writeFileAsync = util.promisify(fs.writeFile)
+const readFileAsync = util.promisify(fs.readFile)
 
 function getMockLog() {
   return {
@@ -43,43 +34,48 @@ test('test help', done => {
   })
 })
 
-test('cr to cr', (done) => {
+const testGetInfo = (def) => async (done) => {
   const mockLog = getMockLog()
   const tool = new Ender(mockLog)
-  const crTxt = tmpDirObj.name + '/cr.txt'
-  const crTxt2 = tmpDirObj.name + '/cr2.txt'
+  const inFile = tempy.file()
 
-  return util.promisify(fs.writeFile)(crTxt, '\r').then(() => {
-    return tool.run(`-n cr -o ${crTxt2} ${crTxt}`.split(' '))
-  }).then(exitCode => {
-    expect(exitCode).toBe(0)
-    expect(getOutput(mockLog.error)).toEqual(expect.stringMatching(/cr2.txt/))
-    // TODO: Check number of lines and contents of file
-    done()
-  })
-})
+  await writeFileAsync(inFile, def.in)
+  let exitCode = await tool.run([inFile])
+  expect(exitCode).toBe(0)
+  expect(getOutput(mockLog.info)).toMatch(def.info)
+  done()
+}
 
-// def test_lf_txt
-//   output = `cd #{@ender_dir}; #{@bin_dir}/ender lf.txt`
-//   assert output.end_with?("\"lf.txt\", lf, 2 lines\n"), output
-// end
-//
-// def test_crlf_txt
-//   output = `cd #{@ender_dir}; #{@bin_dir}/ender crlf.txt`
-//   assert output.end_with?("\"crlf.txt\", crlf, 2 lines\n"), output
-// end
-//
-// # TODO: The rest of these...
-//
-// # eval $ENDER mixed1.txt
-// # eval $ENDER mixed2.txt
-// # eval $ENDER mixed3.txt
-// # eval $ENDER mixed4.txt
-// # eval $ENDER -m lf -o cr2lf.txt cr.txt
-// # eval $ENDER -m cr -o lf2cr.txt lf.txt
-// # eval $ENDER -m lf -o crlf2lf.txt crlf.txt
-// # eval $ENDER -m cr -o crlf2cr.txt crlf.txt
-// # eval $ENDER -m auto mixed1.txt
-// # eval $ENDER -m auto mixed2.txt
-// # eval $ENDER -m auto mixed3.txt
-// # eval $ENDER -m auto mixed4.txt
+const toHexArray = (s) => (Array(s.length).fill().map((_, i) => s.charCodeAt(i).toString(16).padStart(2, '0')).join(' '))
+
+const testConvert = (def) => async (done) => {
+  const mockLog = getMockLog()
+  const tool = new Ender(mockLog)
+  const inFile = tempy.file()
+  const outFile = tempy.file()
+
+  await writeFileAsync(inFile, def.in)
+  let exitCode = await tool.run([inFile, '-o', outFile, '-n', def.newEol])
+  expect(exitCode).toBe(0)
+  expect(getOutput(mockLog.info)).toMatch(def.info)
+  const content = await readFileAsync(outFile, { encoding: 'utf8' })
+  expect(toHexArray(content)).toBe(toHexArray(def.out))
+  done()
+}
+
+test('lf info', testGetInfo({ in: '\r', info: /cr, 2 lines/ }))
+test('crlf info', testGetInfo({ in: '\r\n', info: /crlf, 2 lines/ }))
+test('mixed1 info', testGetInfo({ in: '\n\r\n\r', info: /mixed, 4 lines/ }))
+test('mixed2 info', testGetInfo({ in: '\n\n\r\n\r', info: /mixed, 5 lines/ }))
+test('mixed3 info', testGetInfo({ in: '\n\r\n\r\r', info: /mixed, 5 lines/ }))
+test('mixed4 info', testGetInfo({ in: '\n\r\n\r\r\n', info: /mixed, 5 lines/ }))
+
+test('cr to lf', testConvert({ in: '\r', newEol: 'lf', out: '\n', info: /cr, 2 lines.*lf, 2 lines/ }))
+test('lf to cr', testConvert({ in: '\n', newEol: 'cr', out: '\r', info: /lf, 2 lines.*cr, 2 lines/ }))
+test('crlf to lf', testConvert({ in: '\r\n', newEol: 'lf', out: '\n', info: /crlf, 2 lines.*lf, 2 lines/ }))
+test('crlf to lf', testConvert({ in: '\r\n', newEol: 'lf', out: '\n', info: /crlf, 2 lines.*lf, 2 lines/ }))
+test('crlf to cr', testConvert({ in: '\r\n', newEol: 'cr', out: '\r', info: /crlf, 2 lines.*cr, 2 lines/ }))
+test('mixed1 to auto', testConvert({ in: '\n\r\n\r', newEol: 'auto', out: '\n\n\n', info: /mixed, 4 lines.*lf, 4 lines/ }))
+test('mixed2 to auto', testConvert({ in: '\n\n\r\n\r', newEol: 'auto', out: '\n\n\n\n', info: /mixed, 5 lines.*lf, 5 lines/ }))
+test('mixed3 to auto', testConvert({ in: '\n\r\n\r\r', newEol: 'auto', out: '\r\r\r\r', info: /mixed, 5 lines.*cr, 5 lines/ }))
+test('mixed4 to auto', testConvert({ in: '\n\r\n\r\r\n', newEol: 'auto', out: '\r\n\r\n\r\n\r\n', info: /mixed, 5 lines.*crlf, 5 lines/ }))

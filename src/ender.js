@@ -57,15 +57,6 @@ export class Ender {
 
   async writeNewFile(info) {
     return new Promise((resolve, reject) => {
-      let newNumLines = 1
-
-      if ((this.args['new-eol'] === 'cr' && info.numCR + 1 === info.numLines) ||
-          (this.args['new-eol'] === 'lf' && info.numLF + 1 === info.numLines) ||
-          (this.args['new-eol'] === 'crlf' && info.numCRLF + 1 === info.numLines)) {
-        // We're not changing the line endings; nothing to do
-        return resolve()
-      }
-
       const newlineChars = (this.args['new-eol'] === 'cr' ? '\r' : this.args['new-eol'] === 'lf' ? '\n' : '\r\n')
       const writeable = !this.args['output-file'] ? process.stdout :
         fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
@@ -77,6 +68,7 @@ export class Ender {
         reject()
       })
 
+      let newNumLines = 1
       let i = 0
       while (i < info.fileContents.length) {
         const c = info.fileContents[i]
@@ -97,8 +89,8 @@ export class Ender {
 
         i += 1
       }
-      writeable.end()
       info.newNumLines = newNumLines
+      writeable.end()
     })
   }
 
@@ -109,9 +101,6 @@ export class Ender {
       alias: {
         'o': 'output-file',
         'n': 'new-eol'
-      },
-      default: {
-        'new-eol': 'auto',
       }
     }
     let args = parseArgs(argv, options)
@@ -130,7 +119,7 @@ ender [<options>] <file>
 <file>                    The input file. Defaults to STDIN.
 -o, --output-file <file>  The output file. Can be the same as the input file. Defaults to STDOUT.
 -n, --new-eol <ending>    The new EOL, either 'auto', 'cr', 'lf', 'crlf'.  'auto' will use the most
-                          commonly occurring ending in the input file. Default is 'auto'.
+                          commonly occurring ending in the input file. Default is to just report endings.
 --help                    Displays help
 --version                 Displays version
 `)
@@ -146,7 +135,7 @@ ender [<options>] <file>
     }
 
     const eolList = ['cr', 'lf', 'crlf', 'auto']
-    if (!eolList.includes(args['new-eol'])) {
+    if (args['new-eol'] && !eolList.includes(args['new-eol'])) {
       this.log.error(`New EOL must be one of ${eolList.join(', ')}`)
       return -1
     }
@@ -168,13 +157,20 @@ ender [<options>] <file>
       }
     }
 
-    await this.writeNewFile(info)
+    let msg = `'${args['input-file'] || '<stdin>'}', ` +
+    `${info.numEndings > 1 ? 'mixed' : info.numCR > 0 ? 'cr' : info.numLF > 0 ? 'lf' : 'crlf'}, ` +
+    `${info.numLines} lines`
 
-    this.log.error(
-      `'${args['input-file'] || '<stdin>'}', ` +
-      `${info.numEndings > 1 ? 'mixed' : info.numCR > 0 ? 'cr' : info.numLF > 0 ? 'lf' : 'crlf'}, ` +
-      `${info.numLines} lines` +
-      ` -> '${args['output-file'] || '<stdout>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`)
+    if (
+      args['new-eol'] &&
+      !(args['new-eol'] === 'cr' && info.numCR + 1 === info.numLines) &&
+      !(args['new-eol'] === 'lf' && info.numLF + 1 === info.numLines) &&
+      !(args['new-eol'] === 'crlf' && info.numCRLF + 1 === info.numLines)) {
+      await this.writeNewFile(info)
+      msg += ` -> '${args['output-file'] || '<stdout>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`
+    }
+
+    this.log.info(msg)
     return 0
   }
 }

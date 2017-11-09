@@ -3,7 +3,7 @@ import { Ender } from './Ender'
 import chalk from 'chalk'
 
 const log = {
-  info: console.info,
+  info: console.error,
   error: function() { console.error(chalk.red('error:', [...arguments].join(' ')))},
   warning: function() { console.error(chalk.yellow('warning:', [...arguments].join(' ')))}
 }

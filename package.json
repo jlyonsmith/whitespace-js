@@ -21,7 +21,8 @@
     "build": "babel src -d dist -s --ignore *.test.js",
     "debug:ender": "babel-node --inspect-brk src/ender-cli.js",
     "debug:spacer": "babel-node --inspect-brk src/spacer-cli.js",
-    "test": "jest"
+    "tests": "jest --testPathPattern src/*.test.js",
+    "tests:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --testPathPattern src/*.test.js"
   },
   "keywords": [
     "end",
@@ -33,7 +34,8 @@
   "dependencies": {
     "auto-bind2": "^1.0.3",
     "concat-stream": "^1.6.0",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "tempy": "^0.2.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -44,7 +46,6 @@
     "istanbul": "^0.4.5",
     "jest": "^21.1.0",
     "jest-babel-istanbul": "^0.1.0",
-    "nodemon": "^1.12.1",
-    "tmp": "0.0.33"
+    "nodemon": "^1.12.1"
   }
 }
