@@ -149,7 +149,7 @@ ender [<options>] <file>
     }
 
     let info = await this.readEolInfo()
-    let msg = `'${args['input-file'] || '<stdin>'}', ` +
+    let msg = `'${args['input-file'] || '<STDIN>'}', ` +
       `${info.numEndings > 1 ? 'mixed' : info.numCR > 0 ? 'cr' : info.numLF > 0 ? 'lf' : 'crlf'}, ` +
       `${info.numLines} lines`
 
@@ -177,7 +177,7 @@ ender [<options>] <file>
         info.newNumLines = info.numLines
       }
 
-      msg += ` -> '${args['output-file'] || '<stdout>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`
+      msg += ` -> '${args['output-file'] || '<STDOUT>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`
     }
 
     this.log.info(msg)

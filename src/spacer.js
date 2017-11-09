@@ -228,7 +228,7 @@ spacer [<options>] <file>
 
     const info = await this.readBolInfo()
     const bolType = (s, t) => (t > 0 ? (s > 0 ? 'mixed' : 'tabs') : 'spaces')
-    let msg = `'${args['input-file'] || '<stdin>'}', ${bolType(info.spaces, info.tabs)}`
+    let msg = `'${args['input-file'] || '<STDIN>'}', ${bolType(info.spaces, info.tabs)}`
 
     if (args['new-bol']) {
       if (args['new-bol'] === 'auto') {
