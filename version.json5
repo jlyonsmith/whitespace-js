@@ -7,13 +7,12 @@
   ],
   buildFormat: "full",
   tags: {
-    major: 1,
+    major: 0,
     minor: 0,
     patch: 0,
     build: 20171109,
-    revision: 0,
-    tz: "America/Los_Angeles",
-    startYear: "2017"
+    revision: 1,
+    tz: "America/Los_Angeles"
   },
   fileTypes: [
     {
