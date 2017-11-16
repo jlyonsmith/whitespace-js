@@ -49,9 +49,6 @@
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.0",
-    "istanbul": "^0.4.5",
-    "jest": "^21.1.0",
-    "jest-babel-istanbul": "^0.1.0",
-    "nodemon": "^1.12.1"
+    "jest": "^21.1.0"
   }
 }
