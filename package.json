@@ -21,8 +21,8 @@
     "build": "babel src -d dist -s --ignore *.test.js",
     "debug:ender": "babel-node --inspect-brk src/ender-cli.js",
     "debug:spacer": "babel-node --inspect-brk src/spacer-cli.js",
-    "tests": "jest",
-    "tests:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
+    "test": "jest",
+    "test:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },
   "jest": {
     "testPathIgnorePatterns": [
