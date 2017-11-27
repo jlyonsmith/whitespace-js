@@ -190,11 +190,7 @@ ender [<options>] <file>
         }
       }
 
-      if (!(args['new-eol'] === 'cr' && info.numCR + 1 === info.numLines) && !(args['new-eol'] === 'lf' && info.numLF + 1 === info.numLines) && !(args['new-eol'] === 'crlf' && info.numCRLF + 1 === info.numLines)) {
-        await this.writeNewFile(info);
-      } else {
-        info.newNumLines = info.numLines;
-      }
+      await this.writeNewFile(info);
 
       msg += ` -> '${args['output-file'] || '<STDOUT>'}', ${this.args['new-eol']}, ${info.newNumLines} lines`;
     }
