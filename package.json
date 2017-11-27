@@ -39,6 +39,7 @@
   "license": "MIT",
   "dependencies": {
     "auto-bind2": "^1.0.3",
+    "chalk": "^2.3.0",
     "concat-stream": "^1.6.0",
     "minimist": "^1.2.0",
     "tempy": "^0.2.1"
