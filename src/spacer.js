@@ -201,7 +201,7 @@ spacer [<options>] <file>
 -o, --output-file <file>    The output file. Can be the same as the input file. Defaults to STDOUT.
 -n, --new-bol <space>       The new BOL line spacing, either 'tabs' or 'spaces' or 'auto'.
                             Default is to just report.
--t, --tab-size               The tab size to assume in the existing file, in spaces. Defaults to 2.
+-t, --tab-size              The tab size to assume in the existing file, in spaces. Defaults to 2.
 -r, --round                 When tabifying, rounds extra spaces down to a whole number of tabs.
                             Defaults to false.
 --help                      Displays help
@@ -239,14 +239,7 @@ spacer [<options>] <file>
         }
       }
 
-      if (!(this.args['new-bol'] === 'tabs' && info.spaces === 0) &&
-          !(this.args['new-bol'] === 'spaces' && info.tabs === 0)) {
-        // We're not changing the line beginnings; nothing to do
-        await this.writeNewFile(info)
-      } else {
-        info.newSpaces = info.spaces
-        info.newTabs = info.tabs
-      }
+      await this.writeNewFile(info)
 
       msg += ` -> '${args['output-file'] || '<stdout>'}', ${bolType(info.newSpaces, info.newTabs)}`
     }
