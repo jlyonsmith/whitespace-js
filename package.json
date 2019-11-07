@@ -25,9 +25,11 @@
     "test:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },
   "jest": {
+    "collectCoverage": true,
     "testPathIgnorePatterns": [
       "node_modules/",
-      "scratch/"
+      "scratch/",
+      "dist/"
     ]
   },
   "keywords": [
@@ -38,18 +40,21 @@
   "author": "John Lyon-Smith",
   "license": "MIT",
   "dependencies": {
-    "auto-bind2": "^1.0.3",
-    "chalk": "^2.3.0",
-    "concat-stream": "^1.6.0",
+    "autobind-decorator": "^2.4.0",
+    "chalk": "^2.4.2",
+    "concat-stream": "^2.0.0",
     "minimist": "^1.2.0",
-    "tempy": "^0.2.1"
+    "tempy": "^0.3.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
-    "jest": "^21.1.0"
+    "@babel/cli": "^7.7.0",
+    "@babel/core": "^7.7.2",
+    "@babel/node": "^7.7.0",
+    "@babel/plugin-proposal-class-properties": "^7.7.0",
+    "@babel/plugin-proposal-decorators": "^7.7.0",
+    "@babel/plugin-proposal-optional-chaining": "^7.6.0",
+    "@babel/plugin-syntax-object-rest-spread": "^7.2.0",
+    "@babel/preset-env": "^7.7.1",
+    "jest-cli": "^24.9.0"
   }
 }

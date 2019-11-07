@@ -1,20 +1,21 @@
-import parseArgs from 'minimist'
-import fs from 'fs'
-import concat from 'concat-stream'
-import { fullVersion } from './version'
-import autoBind from 'auto-bind2'
-import stream from 'stream'
+import parseArgs from "minimist"
+import fs from "fs"
+import concat from "concat-stream"
+import { fullVersion } from "./version"
+import autobind from "autobind-decorator"
+import stream from "stream"
 
+@autobind
 export class Spacer {
   constructor(log) {
     this.log = log
-    autoBind(this)
   }
 
   readBolInfo() {
     return new Promise((resolve, reject) => {
-      const readable = (!this.args['input-file'] ? process.stdin :
-        fs.createReadStream(this.args['input-file'], { encoding: 'utf8' }))
+      const readable = !this.args["input-file"]
+        ? process.stdin
+        : fs.createReadStream(this.args["input-file"], { encoding: "utf8" })
 
       // Read the entire file && determine all the different line endings
       let info = {
@@ -22,7 +23,7 @@ export class Spacer {
         tabs: 0,
       }
 
-      readable.on('error', (err) => {
+      readable.on("error", (err) => {
         reject(err)
       })
 
@@ -35,14 +36,14 @@ export class Spacer {
           const c = fileContents[i]
 
           if (atBol) {
-            if (c === ' ') {
+            if (c === " ") {
               info.spaces += 1
-            } else if (c === '\t') {
+            } else if (c === "\t") {
               info.tabs += 1
             } else {
               atBol = false
             }
-          } else if (c === '\n') {
+          } else if (c === "\n") {
             atBol = true
           }
 
@@ -57,15 +58,15 @@ export class Spacer {
 
   async writeNewFile(info) {
     function untabify(s, ts) {
-      let t = ''
+      let t = ""
 
       for (let i = 0; i < s.length; i++) {
         const c = s[i]
 
-        if (c === '\t') {
+        if (c === "\t") {
           const n = ts - (t.length % ts)
 
-          t += ' '.repeat(n)
+          t += " ".repeat(n)
         } else {
           t += c
         }
@@ -76,24 +77,24 @@ export class Spacer {
 
     function tabify(s, ts, r) {
       let ns = 0
-      let t = ''
+      let t = ""
 
       for (let i = 0; i < s.length; i++) {
         const c = s[i]
 
-        if (c === ' ') {
+        if (c === " ") {
           ns += 1
         }
 
         if (ns % ts === 0) {
-          t += '\t'
+          t += "\t"
           ns = 0
         }
       }
 
       if (ns > 0) {
         if (!r) {
-          t += ' '.repeat(ns)
+          t += " ".repeat(ns)
         } else {
           ns = 0
         }
@@ -108,36 +109,39 @@ export class Spacer {
 
       let writable = null
 
-      if (!this.args['output-file']) {
+      if (!this.args["output-file"]) {
         writable = new stream.PassThrough()
         writable.pipe(process.stdout)
       } else {
-        writable = fs.createWriteStream(this.args['output-file'], { flags: 'w', encoding: 'utf8' })
+        writable = fs.createWriteStream(this.args["output-file"], {
+          flags: "w",
+          encoding: "utf8",
+        })
       }
 
-      writable.on('finish', () => {
+      writable.on("finish", () => {
         resolve()
       })
-      writable.on('error', (err) => {
+      writable.on("error", (err) => {
         reject()
       })
 
-      const toTabs = (this.args['new-bol'] === 'tabs')
+      const toTabs = this.args["new-bol"] === "tabs"
       let atBol = true
-      let ts = this.args['tab-size']
-      let r = this.args['round']
+      let ts = this.args["tab-size"]
+      let r = this.args["round"]
       let i = 0
-      let s = ''
+      let s = ""
 
       while (i < info.fileContents.length) {
         const c = info.fileContents[i]
 
-        if (c === '\n') {
-          s = ''
+        if (c === "\n") {
+          s = ""
           atBol = true
           writable.write(c)
         } else if (atBol) {
-          if (c === ' ' || c === '\t') {
+          if (c === " " || c === "\t") {
             s += c
           } else {
             atBol = false
@@ -171,18 +175,18 @@ export class Spacer {
 
   async run(argv) {
     const options = {
-      string: [ 'new-bol', 'output-file', 'tab-size' ],
-      boolean: [ 'help', 'version', 'round' ],
+      string: ["new-bol", "output-file", "tab-size"],
+      boolean: ["help", "version", "round"],
       alias: {
-        'o': 'output-file',
-        'n': 'new-bol',
-        't': 'tab-size',
-        'r': 'round',
+        o: "output-file",
+        n: "new-bol",
+        t: "tab-size",
+        r: "round",
       },
       default: {
-        'round': false,
-        'tab-size': '2',
-      }
+        round: false,
+        "tab-size": "2",
+      },
     }
     let args = parseArgs(argv, options)
 
@@ -210,38 +214,44 @@ spacer [<options>] <file>
       return 0
     }
 
-    args['input-file'] = (args['_'].length > 0 ? args['_'][0] : null)
+    args["input-file"] = args["_"].length > 0 ? args["_"][0] : null
 
-    if (args['input-file'] && !fs.existsSync(args['input-file'])) {
-      this.log.error(`File '${args['input-file']}' does not exist`)
+    if (args["input-file"] && !fs.existsSync(args["input-file"])) {
+      this.log.error(`File '${args["input-file"]}' does not exist`)
       return -1
     }
 
-    const bolList = ['tabs', 'spaces', 'auto']
-    if (args['new-bol'] && !bolList.includes(args['new-bol'])) {
-      this.log.error(`New BOL must be one of ${bolList.join(', ')}`)
+    const bolList = ["tabs", "spaces", "auto"]
+    if (args["new-bol"] && !bolList.includes(args["new-bol"])) {
+      this.log.error(`New BOL must be one of ${bolList.join(", ")}`)
       return -1
     }
 
-    args['tab-size'] = parseInt(args['tab-size'])
+    args["tab-size"] = parseInt(args["tab-size"])
     this.args = args
 
     const info = await this.readBolInfo()
-    const bolType = (s, t) => (t > 0 ? (s > 0 ? 'mixed' : 'tabs') : 'spaces')
-    let msg = `'${args['input-file'] || '<STDIN>'}', ${bolType(info.spaces, info.tabs)}`
+    const bolType = (s, t) => (t > 0 ? (s > 0 ? "mixed" : "tabs") : "spaces")
+    let msg = `'${args["input-file"] || "<STDIN>"}', ${bolType(
+      info.spaces,
+      info.tabs
+    )}`
 
-    if (args['new-bol']) {
-      if (args['new-bol'] === 'auto') {
+    if (args["new-bol"]) {
+      if (args["new-bol"] === "auto") {
         if (info.spaces > info.tabs) {
-          args['new-bol'] = 'spaces'
+          args["new-bol"] = "spaces"
         } else {
-          args['new-bol'] = 'tabs'
+          args["new-bol"] = "tabs"
         }
       }
 
       await this.writeNewFile(info)
 
-      msg += ` -> '${args['output-file'] || '<stdout>'}', ${bolType(info.newSpaces, info.newTabs)}`
+      msg += ` -> '${args["output-file"] || "<stdout>"}', ${bolType(
+        info.newSpaces,
+        info.newTabs
+      )}`
     }
 
     this.log.info(msg)
