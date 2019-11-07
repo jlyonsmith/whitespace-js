@@ -1,5 +1,5 @@
 {
-  "name": "whitespace-tools",
+  "name": "@johnls/whitespace",
   "version": "1.1.0",
   "engines": {
     "node": ">=10.0"
@@ -22,7 +22,8 @@
     "debug:ender": "babel-node --inspect-brk src/ender.js",
     "debug:spacer": "babel-node --inspect-brk src/spacer.js",
     "test": "jest",
-    "test:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
+    "test:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand",
+    "deploy": "npm publish --access public"
   },
   "jest": {
     "collectCoverage": true,
