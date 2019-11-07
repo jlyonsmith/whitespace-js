@@ -6,7 +6,7 @@ import autobind from "autobind-decorator"
 import stream from "stream"
 
 @autobind
-export class Spacer {
+export class SpacerTool {
   constructor(log) {
     this.log = log
   }

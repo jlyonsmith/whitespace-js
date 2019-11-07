@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Ender } from "./Ender"
+import { EnderTool } from "./EnderTool"
 import chalk from "chalk"
 
 const log = {
@@ -12,7 +12,7 @@ const log = {
   },
 }
 
-const tool = new Ender(console)
+const tool = new EnderTool(console)
 tool
   .run(process.argv.slice(2))
   .then((exitCode) => {

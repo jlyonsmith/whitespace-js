@@ -1,4 +1,4 @@
-import { Ender } from "./Ender"
+import { EnderTool } from "./EnderTool"
 import tempy from "tempy"
 import fs from "fs"
 import util from "util"
@@ -25,7 +25,7 @@ function getOutput(fn) {
 
 test("test help", async (done) => {
   const mockLog = getMockLog()
-  const tool = new Ender(mockLog)
+  const tool = new EnderTool(mockLog)
 
   const exitCode = await tool.run(["--help"])
   expect(exitCode).toBe(0)
@@ -35,7 +35,7 @@ test("test help", async (done) => {
 
 const testGetInfo = (def) => async (done) => {
   const mockLog = getMockLog()
-  const tool = new Ender(mockLog)
+  const tool = new EnderTool(mockLog)
   const inFile = tempy.file()
 
   await writeFileAsync(inFile, def.in)
@@ -65,7 +65,7 @@ const toHexArray = (s) =>
 
 const testConvert = (def) => async (done) => {
   const mockLog = getMockLog()
-  const tool = new Ender(mockLog)
+  const tool = new EnderTool(mockLog)
   const inFile = tempy.file()
   const outFile = tempy.file()
 

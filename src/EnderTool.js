@@ -6,7 +6,7 @@ import stream from "stream"
 import autobind from "autobind-decorator"
 
 @autobind
-export class Ender {
+export class EnderTool {
   constructor(log) {
     this.log = log
   }

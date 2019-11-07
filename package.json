@@ -2,7 +2,7 @@
   "name": "whitespace-tools",
   "version": "1.1.0",
   "engines": {
-    "node": ">=8.0"
+    "node": ">=10.0"
   },
   "os": [
     "darwin",
@@ -14,13 +14,13 @@
     "dist/**"
   ],
   "bin": {
-    "ender": "dist/ender-cli.js",
-    "spacer": "dist/spacer-cli.js"
+    "ender": "dist/ender.js",
+    "spacer": "dist/spacer.js"
   },
   "scripts": {
     "build": "babel src -d dist -s --ignore *.test.js",
-    "debug:ender": "babel-node --inspect-brk src/ender-cli.js",
-    "debug:spacer": "babel-node --inspect-brk src/spacer-cli.js",
+    "debug:ender": "babel-node --inspect-brk src/ender.js",
+    "debug:spacer": "babel-node --inspect-brk src/spacer.js",
     "test": "jest",
     "test:debug": "babel-node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },

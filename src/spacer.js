@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Spacer } from "./Spacer"
+import { SpacerTool } from "./SpacerTool"
 import chalk from "chalk"
 
 const log = {
@@ -12,7 +12,7 @@ const log = {
   },
 }
 
-const tool = new Spacer(console)
+const tool = new SpacerTool(console)
 tool
   .run(process.argv.slice(2))
   .then((exitCode) => {
