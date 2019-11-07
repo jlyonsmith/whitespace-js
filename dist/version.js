@@ -1,8 +1,11 @@
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-const version = exports.version = '1.1.0';
-const fullVersion = exports.fullVersion = '1.1.0-20191105.0';
+exports.fullVersion = exports.shortVersion = void 0;
+const shortVersion = "1.2.0";
+exports.shortVersion = shortVersion;
+const fullVersion = "1.2.0+20191106.0";
+exports.fullVersion = fullVersion;
 //# sourceMappingURL=version.js.map
